@@ -40,7 +40,7 @@ Step 2: Configure flume
  2) Also need to download and add the folloiwng missing jars
 		 1015  cp flume-ng-core-1.3.0.jar /usr/lib/flume-ng/lib/
 		 1047  cp /home/cloudera/facebook/apache-flume-1.3.0-bin/lib/flume-ng-sdk-1.3.0.jar /usr/lib/flume-ng/lib
- 3) NOTE - the YYYYMMDDHH isn’t working, disabled for now, need to try later
+ 3) NOTE - the YYYYMMDDHH isnï¿½t working, disabled for now, need to try later
 		a. Reason (excption=
 		at java.lang.Thread.run(Thread.java:662)
 		Caused by: java.lang.RuntimeException: Flume wasn't able to parse timestamp header in the event to resolve time based bucketing. Please check that you're correctly populating timestamp header (for example using TimestampInterceptor source interceptor).)
@@ -74,3 +74,4 @@ Step 4: Stop/Start flume agent
 1) /etc/init.d/flume-ng-agent stop
 2) /etc/init.d/flume-ng-agent start
 3) make sure everything looks good in /var/log/flume-ng/flume.log
+
