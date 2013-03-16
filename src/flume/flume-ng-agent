@@ -1,0 +1,8 @@
+# Set a custom agent name (default is agent) 
+#
+#
+FLUME_AGENT_NAME=SocialAgent
+
+# FLUME_AGENT_NAME=kings-river-flume
+#FLUME_AGENT_NAME=TwitterAgent
+#FLUME_AGENT_NAME=FacebookAgent
