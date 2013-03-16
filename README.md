@@ -75,3 +75,4 @@ Step 4: Stop/Start flume agent
 2) /etc/init.d/flume-ng-agent start
 3) make sure everything looks good in /var/log/flume-ng/flume.log
 
+
