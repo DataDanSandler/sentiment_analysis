@@ -1,4 +1,4 @@
-How To setup a Facebook app that streams to Hadoop
+How To setup a Facebook app that streams to Hadoop & Make Twitter stream real-time
 ===================
 
 This repository contains sample code to create a FB app that streams data to Hadoop.  It includes components such as:
@@ -115,3 +115,76 @@ Step 4: Stop/Start flume agent
 3) make sure everything looks good in /var/log/flume-ng/flume.log
 
 
+Step 5: Make Twitter stream real-time
+---------------
+1) Create custom Java Package to Ignore Flume Temp Files
+You’ll want to create a new Java package using the following steps. There is no Java programming knowledge required, simply follow these instructions.
+It is necessary to create this Java class and JAR it so that you can exclude the temporary Flume files created as Tweets are streamed to HDFS
+
+<pre>
+mkdir com
+mkdir com/twitter
+mkdir com/twitter/util
+export CLASSPATH=/usr/lib/hadoop/hadoop-common-2.0.0-cdh4.1.3.jar:hadoop-common.jar
+Be sure to reference the cdh4.X.X you are working with
+vi com/twitter/util/FileFilterExcludeTmpFiles.java
+Copy the Java source code at the end of the posting and save it.
+javac com/twitter/util/FileFilterExcludeTmpFiles.java
+jar cf TwitterUtil.jar com
+cp TwitterUtil.jar /usr/lib/hadoop
+</pre>
+
+2) - Remove Wait condition from Oozie job configuration 
+
+Open coord-app.xml (in the location you placed the oozie-workflows folder)
+
+Remove the following tags. This is extremely important in making the tutorial as real-time as possible. The default Oozie workflow has defined a readyIndicator which acts as a wait event. It instructs the workflow to create a new partition after an hour completes. Thus if you leave this configuration as-is, there will be a lag as great as one-hour between tweets and when the tweets can be queried. The reason for this default configuration is that the tutorial did not define the custom JAR we built and deployed for Hive that instructs MapReduce to omit temporary Flume files. Because we have deployed this custom package in step 1, we do not have to force a full hour to complete before querying tweets.
+
+<pre>
+<data-in name="readyIndicator" dataset="tweets">
+  <!-- I’ve done something here that is a little bit of a hack. Since Flume doesn’t have a good mechanism for notifying an application of when it has rolled to a new directory, we can just use the next directory as an input event, which instructs Oozie not to kick off a coordinator action until the next dataset starts being available. -->
+  <instance>${coord:current(1 + (coord:tzOffset() / 60))}</ instance>
+</data-in
+</pre>
+
+
+Retart Oozie workflow
+
+<pre>
+sudo -u hdfs oozie job -oozie http://localhost:11000/oozie -config /home/oozie_lib/oozie-workflows/job.properties -run
+sudo -u hdfs oozie job -oozie http://localhost:11000/oozie -kill  <oozie_coordinating_job_name>
+</pre>
+
+
+3) Modify the Hive Configuration File to use Packge in Step 1 to Ignore Flume Temp files
+
+Edit the file /etc/hive/conf/hive-site.xml, and add the following tags.  The first property ensures that you won’t have to add the JSON SerDe package and the new customer package that excludes Flume temporary files for each Hive session. This will become part of the overall Hive configurations that is available to each Hive session. The second tags instruct MapReduce of the class name and location of the new Java class that we created and compiled above.
+
+<pre>
+<property>
+  <name>hive.aux.jars.path</name>
+  <value>file:///usr/lib/hadoop/hive-serdes-1.0-SNAPSHOT.jar,file:///usr/lib/hadoop/TwitterUtil.jar</value>
+  </property>
+ <property>
+   <value>com.twitter.util.FileFilterExcludeTmpFiles</value>
+ </property>
+ </pre>
+Sample Code
+
+Use the following 12-lines of Java code (many thanks to the contributors to the CDH Google group for the working example)
+
+<pre>
+package com.twitter.util;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
+public class FileFilterExcludeTmpFiles implements PathFilter {
+public boolean accept(Path p) {
+String name = p.getName();
+return !name.startsWith("_") && !name.startsWith(".") && !name.endsWith(". tmp");
+}
+}
+</pre>
+- See more at: http://www.datadansandler.com/2013/03/making-clouderas-twitter-stream-real.html#sthash.wBNmhsQU.dpuf
